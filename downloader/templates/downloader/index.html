@@ -1,0 +1,94 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/downloader/static/downloader/css/styles.css">
+    <script src="/downloader/static/downloader/js/script.js"></script>
+
+    <title>Video Downloader</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        input, button { padding: 10px; margin: 5px; }
+        button { background-color: #007BFF; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        a { color: #007BFF; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <h1>Video Downloader</h1>
+
+    <div>
+        <label for="links">Enter video links (comma-separated): </label>
+        <input type="text" id="links"  style="height: 200px;width: 400px;" placeholder="Paste video URLs" />
+    </div>
+    
+    <div>
+        <label for="downloadOption">Download Type: </label>
+        <select id="downloadOption">
+            <option value="single">Single Video</option>
+            <option value="multiple">Multiple Videos</option>
+            <option value="audio">Audio Only</option>
+        </select>
+    </div>
+    
+    <button id="downloadBtn">Download</button>
+    
+    <p id="result"></p>
+    
+    <script>
+    document.getElementById('downloadBtn').addEventListener('click', async function() {
+        const linksInput = document.getElementById('links').value.trim();
+        const downloadOption = document.getElementById('downloadOption').value;
+    
+        if (!linksInput) {
+            document.getElementById('result').textContent = "Please enter valid video links.";
+            return;
+        }
+    
+        const links = linksInput.split(',').map(link => link.trim()); // Split and clean up the links
+        document.getElementById('result').textContent = "Download started...!";
+
+        try {
+            const response = await fetch('/download/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ links, option: downloadOption })
+            });
+    
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+    
+                if (downloadOption === 'audio') {
+                    a.download = "downloaded_audio.mp3";
+                } else if (downloadOption === 'single') {
+                    a.download = "downloaded_video.mp4";
+                } else {
+                    a.download = "downloaded_files.zip"; // For multiple videos
+                }
+    
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                document.getElementById('result').textContent = "Download completed!";
+            } else {
+                const errorData = await response.json();
+                document.getElementById('result').textContent = errorData.error || "An error occurred.";
+            }
+        } catch (error) {
+            document.getElementById('result').textContent = "An error occurred: " + error.message;
+        }
+    });
+    </script>
+
+</body>
+</html>
